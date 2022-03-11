@@ -25,7 +25,7 @@ public class Main {
 			actor.tell(m, ActorRef.noSender());
 		}
 
-		OfconsProposerMsg opm = new OfconsProposerMsg("100");
+		OfconsProposerMsg opm = new OfconsProposerMsg(100);
 		references.get(0).tell(opm, ActorRef.noSender());
 	}
 }

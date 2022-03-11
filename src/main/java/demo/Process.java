@@ -19,6 +19,7 @@ public class Process extends UntypedAbstractActor {
     private Members processes;//other processes' references
     private Integer proposal;
     private int ballot;
+    
     public Process(int ID, int nb) {
         N = nb;
         id = ID;
@@ -63,9 +64,10 @@ public class Process extends UntypedAbstractActor {
               this.ofconsProposeReceived(m.v);
       
           }
-          else if (message instanceof ReadMsg) {
+         else if (message instanceof ReadMsg) {
               ReadMsg m = (ReadMsg) message;
               this.readReceived(m.ballot, getSender());
           }
+       
 }
 }
