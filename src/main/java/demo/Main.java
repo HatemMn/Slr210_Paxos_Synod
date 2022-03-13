@@ -13,7 +13,7 @@ public class Main {
 	 */
 	
 	public static int N = 2;
-	public static int f = 1;
+	public static int f = 0;
 	public static int Tle = 500;
 	public static double alpha = 0.1;
 	public static boolean debug_mode = true;
@@ -61,7 +61,9 @@ public class Main {
             references.get(i).tell(new Hold(), ActorRef.noSender());
         }
         
-		
+
+        
+        
         // code zeyed mayosle7 fi chay
 //		OfconsProposerMsg opm = new OfconsProposerMsg(100);
 //		references.get(0).tell(opm, ActorRef.noSender());

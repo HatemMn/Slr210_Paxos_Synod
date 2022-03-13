@@ -136,6 +136,7 @@ public class Process extends UntypedAbstractActor {
 	public void ofConsReceiveRead(int b_received, int IDj) {
 		ActorRef sender = processes.references.get(IDj);
 
+		/*
 		if( readBallot > b_received || imposeBallot > b_received ) {
 			sender.tell(new Abort(b_received), getSender());
 			if( debug ) { log.info("Abort ballot " + b_received + " : p" + self().path().name() + " -> p" + sender.path().name()); }
@@ -143,6 +144,7 @@ public class Process extends UntypedAbstractActor {
 			readBallot = b_received;
 			sender.tell(new Gather(b_received, imposeBallot, estimate,id), sender);
 		}
+		*/
 	}
 	
 	public void ofConsGather(int b_received, int estBallot, int est, int IDj) {
@@ -191,6 +193,9 @@ public class Process extends UntypedAbstractActor {
 			if (message instanceof Members) {
 				Members m = (Members) message;
 				processes = m;
+				for (ActorRef actor : m.references) {
+					if( debug ) { log.info("hola ya " + actor.path().name()); }
+				}
 				if(debug) {log.info("p" + self().path().name() + " received processes info");};
 			}
 			// making process fault prone
