@@ -88,7 +88,7 @@ public class Process extends UntypedAbstractActor {
 	}
 
 
-	// 3asb o5ra manich fehemha chtaslah
+/*	// 3asb o5ra manich fehemha chtaslah
 	private void ofconsProposeReceived(Integer v) {
 
 		proposal = v;
@@ -97,12 +97,30 @@ public class Process extends UntypedAbstractActor {
 			log.info("Read ballot " + ballot + " msg: p" + self().path().name() + " -> p" + actor.path().name());
 		}
 	}
-
+*/
+	
 	// chnowa l3asb hethi
 	private void readReceived(int newBallot, ActorRef pj) {
 		log.info("read received " + self().path().name() );
 	}
 
+	
+	/**
+	 * @brief propose method
+	 * 
+	 */
+	public void ofConsPropose(int v) {
+		is_proposing = true;
+		proposal = v;
+		ballot += N;
+		for (ActorRef actor : processes.references) {
+			actor.tell(new Read(ballot), this.getSelf());
+			if( debug ) { log.info("Read ballot " + ballot + " msg: p" + self().path().name() + " -> p" + actor.path().name()); }
+		}
+		return;
+	}
+	
+	
 	/**
 	 * The method that handles the received messages
 	 *
@@ -135,6 +153,7 @@ public class Process extends UntypedAbstractActor {
 			else if (message instanceof Launch) {
 				if( !is_proposing ) {
 					// launch it
+					this.ofConsPropose(Math.random() < 0.5 ? 0 : 1);
 					if(debug) {log.info("p" + self().path().name() + " will now launch.");};
 				}
 				// try to keep relaunching
