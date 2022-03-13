@@ -32,7 +32,7 @@ public class Main {
 			final ActorRef a = system.actorOf(Process.createActor(i , N, alpha, debug_mode), "" + i); // bug source
 			references.add(a);
 		}
-		
+		//a
 		//give each process a view of all the other processes
 		Members m = new Members(references);
 		for (ActorRef actor : references) {
