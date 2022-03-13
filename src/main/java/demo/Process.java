@@ -1,3 +1,26 @@
+/**
+* @file Process.java
+* @author Hatem Mnaouer Ahmed Bouali Salma Ezzina
+* @version 1.0
+*
+* @section LICENSE
+*
+* This program is free software; you can redistribute it and/or
+* modify it under the terms of the GNU General Public License as
+* published by the Free Software Foundation; either version 2 of
+* the License, or (at your option) any later version.
+*
+* @section DESCRIPTION
+*
+* This is the class that emulates the processes.
+*/
+
+/**
+* @brief The process class
+*
+* This class implements the various methods they need
+*/
+
 package demo;
 
 import akka.actor.ActorRef;
@@ -25,9 +48,10 @@ public class Process extends UntypedAbstractActor {
 	private double alpha;
 	private boolean faultProne;
 	private boolean crashed;
+	private boolean debug;
 
 	// Initialise process
-	public Process(int ID, int nb, double al) {
+	public Process(int ID, int nb, double al, boolean deb) {
 		N = nb;
 		id = ID;
 		ballot = id-N;
@@ -40,6 +64,7 @@ public class Process extends UntypedAbstractActor {
 		alpha = al;
 		faultProne = false;
 		crashed = false;
+		debug = deb;
 	}
 
 	public String toString() {
@@ -48,9 +73,9 @@ public class Process extends UntypedAbstractActor {
 
 
 	// Static function creating actor
-	public static Props createActor(int ID, int nb, double al) {
+	public static Props createActor(int ID, int nb, double al, boolean deb) {
 		return Props.create(Process.class, () -> {
-			return new Process(ID, nb,al);
+			return new Process(ID, nb,al, deb);
 		});
 	}
 
@@ -68,19 +93,34 @@ public class Process extends UntypedAbstractActor {
 		log.info("read received " + self().path().name() );
 	}
 
-
+	/**
+	 * The method that handles the received messages
+	 *
+	 *	 
+	 *
+	 */
 	public void onReceive(Object message) throws Throwable {
+		// if process is crashing
 		if (faultProne && !crashed) {
 			if ( Math.random() < alpha ) {
 				crashed = true;
+				if(debug) {log.info("p" + self().path().name() + " has crashed.");};
 			}
 		}
+		// if the process is working normally
 		if( !crashed ) {
-			if (message instanceof Members) {//save the system's info
+			//save the system's info
+			if (message instanceof Members) {
 				Members m = (Members) message;
 				processes = m;
 				log.info("p" + self().path().name() + " received processes info");
 			}
+			
+			
+			
+			
+			
+			// other
 			else if (message instanceof OfconsProposerMsg) {
 				OfconsProposerMsg m = (OfconsProposerMsg) message;
 				this.ofconsProposeReceived(m.v);
