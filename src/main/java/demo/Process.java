@@ -54,6 +54,7 @@ public class Process extends UntypedAbstractActor {
 	private boolean debug;
 	private boolean is_proposing;
 	private boolean is_halted;
+	private boolean decided;
 	
 	// other arguments
 	private double alpha;
@@ -62,7 +63,7 @@ public class Process extends UntypedAbstractActor {
 	// Initialise process
 	public void init_states() {
 		ballot = id-N;
-		proposal = null;
+		proposal = -1;
 		readBallot = 0;
 		imposeBallot = id-N;
 		estimate = -1;
@@ -81,6 +82,7 @@ public class Process extends UntypedAbstractActor {
 		crashed = false;
 		debug = deb;
 		is_halted = false;
+		decided = false;
 	}
 
 	
@@ -178,11 +180,11 @@ public class Process extends UntypedAbstractActor {
 		ActorRef sender = processes.references.get(IDj);
 		
 		if( readBallot >  b_received || imposeBallot > b_received ) {
-			sender.tell(new Abort( b_received ), sender);
+			sender.tell(new Abort( b_received ), this.getSelf());
 		} else {
 			estimate = v;
 			imposeBallot = b_received;
-			sender.tell(new ACK(b_received, id), sender);
+			sender.tell(new ACK(b_received, id), this.getSelf());
 		}
 	}
 	
@@ -206,9 +208,6 @@ public class Process extends UntypedAbstractActor {
 			if (message instanceof Members) {
 				Members m = (Members) message;
 				processes = m;
-				for (ActorRef actor : m.references) {
-					if( debug ) { log.info("hola ya " + actor.path().name()); }
-				}
 				if(debug) {log.info("p" + self().path().name() + " received processes info");};
 			}
 			// making process fault prone
@@ -221,7 +220,9 @@ public class Process extends UntypedAbstractActor {
 			else if (message instanceof Launch) {
 				if( !is_proposing ) {
 					// launch it
-					this.ofConsPropose(Math.random() < 0.5 ? 0 : 1);
+					int prop = Math.random() < 0.5 ? 0 : 1;
+					this.ofConsPropose(prop);
+					System.out.println("prooooooooooooooooop         *****       " + prop);
 					if(debug) {log.info("p" + self().path().name() + " will now launch.");};
 				}
 				// try to keep relaunching
@@ -256,7 +257,7 @@ public class Process extends UntypedAbstractActor {
 			
 			else if ( message instanceof Impose ) {
 				Impose im = (Impose) message;
-				this.ofConsImposeReceive(im.getBallot(), im.getProposal(), im.getId());
+				this.ofConsImposeReceive(im.getBallot(), im.getProposal(), im.getId() );
 			}
 			
 			else if ( message instanceof ACK ) {
@@ -265,7 +266,21 @@ public class Process extends UntypedAbstractActor {
 				if( ackNumber > N/2 ) {
 					if( debug ) { log.info("This process will send DECIDE and the proposed value to all processes  " + self().path().name()); }
 					for (ActorRef actor : processes.references) {
-						
+						actor.tell(new Decide(proposal), this.getSelf());
+					}
+				}
+			}
+			
+
+			else if ( message instanceof Decide ) {
+				Decide dec = (Decide) message;
+				if(!decided) {
+					decided = true;
+			//		if(debug) {
+						log.info("p" + self().path().name() + " has FINALLY DECIDED the value : " + dec.getProposal());
+				//	};
+					for (ActorRef actor : processes.references) {
+						actor.tell(new Decide(dec.getProposal()), this.getSelf());
 					}
 				}
 			}
@@ -282,6 +297,9 @@ public class Process extends UntypedAbstractActor {
 				this.readReceived(m.ballot, getSender());
 			}
 			 */
+		} else {
+			log.info("p" + self().path().name() + " did nothing : he crashed ");
+
 		}
 	}
 }

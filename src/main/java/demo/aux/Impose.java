@@ -4,6 +4,7 @@ public class Impose {
 	private int id;
 	private int ballot;
 	private int proposal;
+	
 	public int getId() {
 		return id;
 	}
@@ -13,7 +14,7 @@ public class Impose {
 	public int getProposal() {
 		return proposal;
 	}
-	public Impose(int id, int ballot, int proposal) {
+	public Impose(int ballot, int proposal,int id) {
 		this.id = id;
 		this.ballot = ballot;
 		this.proposal = proposal;
