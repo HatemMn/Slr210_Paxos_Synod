@@ -12,8 +12,8 @@ public class Main {
 	 *
 	 */
 	
-	public static int N = 10;
-	public static int f = 5;
+	public static int N = 2;
+	public static int f = 1;
 	public static int Tle = 500;
 	public static double alpha = 0.1;
 	public static boolean debug_mode = true;
@@ -25,10 +25,11 @@ public class Main {
 		final ActorSystem system = ActorSystem.create("system");
 		system.log().info("System started with N=" + N );
 		
-		// Instantiate processes		
+		// Instantiate processes
+		// Please note that our processes are named from 0 to N-1 for convenience, NOT 1 TO N
 		ArrayList<ActorRef> references = new ArrayList<>();
 		for (int i = 0; i < N; i++) {
-			final ActorRef a = system.actorOf(Process.createActor(i + 1, N, alpha, debug_mode), "" + i);
+			final ActorRef a = system.actorOf(Process.createActor(i , N, alpha, debug_mode), "" + i); // bug source
 			references.add(a);
 		}
 		
@@ -37,7 +38,8 @@ public class Main {
 		for (ActorRef actor : references) {
 			actor.tell(m, ActorRef.noSender());
 		}
-		
+		Thread.sleep(2000);		
+
 		// launch message to the processes
 		for (int i = 0; i < N; i++) {
             references.get(i).tell(new Launch(), ActorRef.noSender());

@@ -45,6 +45,7 @@ public class Process extends UntypedAbstractActor {
 	private Integer imposeBallot;
 	private Integer estimate;
 	private int[][] states;
+	private int gatherNumber;
 
 	// process state arguments
 	private boolean faultProne;
@@ -58,16 +59,21 @@ public class Process extends UntypedAbstractActor {
 	private int ReProposeTime = 200;
 
 	// Initialise process
-	public Process(int ID, int nb, double al, boolean deb) {
-		N = nb;
-		id = ID;
+	public void init_states() {
 		ballot = id-N;
 		proposal = null;
 		readBallot = 0;
 		imposeBallot = 0;
 		estimate = null;
 		states = new int[N][2];
-
+		gatherNumber = 0;
+	}
+	
+	public Process(int ID, int nb, double al, boolean deb) {
+		N = nb;
+		id = ID;
+		init_states();
+		
 		alpha = al;
 		faultProne = false;
 		crashed = false;
@@ -75,6 +81,7 @@ public class Process extends UntypedAbstractActor {
 		is_halted = false;
 	}
 
+	
 	public String toString() {
 		return "Process{" + "id=" + id ;
 	}
@@ -113,6 +120,7 @@ public class Process extends UntypedAbstractActor {
 		is_proposing = true;
 		proposal = v;
 		ballot += N;
+		System.out.print(processes.references.toString());
 		for (ActorRef actor : processes.references) {
 			actor.tell(new Read(ballot, id), this.getSelf());
 			if( debug ) { log.info("Read ballot " + ballot + " msg: p" + self().path().name() + " -> p" + actor.path().name()); }
@@ -133,6 +141,32 @@ public class Process extends UntypedAbstractActor {
 			if( debug ) { log.info("Abort ballot " + b_received + " : p" + self().path().name() + " -> p" + sender.path().name()); }
 		} else {
 			readBallot = b_received;
+			sender.tell(new Gather(b_received, imposeBallot, estimate,id), sender);
+		}
+	}
+	
+	public void ofConsGather(int b_received, int estBallot, int est, int IDj) {
+		ActorRef sender = processes.references.get(IDj);
+		states[IDj][0] = est;
+		states[IDj][1] = estBallot;
+		gatherNumber++;
+		if( gatherNumber > N/2) {
+			// check if exists some estBallot > 0
+			int maxBal = -1, maxEst = -1;
+			for(int i=0; i<N;i++ ) {
+				if( states[i][1] > 0 && states[i][1] > maxBal) {
+					maxBal = states[i][1];
+					maxEst = states[i][0];
+				}
+			}
+			if(maxBal > 0) {
+				proposal = maxEst;
+			}
+			states = new int[N][2];
+			for (ActorRef actor : processes.references) {
+				actor.tell(new Impose(ballot, proposal,id), this.getSelf());
+				if( debug ) { log.info("Someone is proposing : p" + self().path().name() + " -> p" + actor.path().name()); }
+			}
 		}
 	}
 	
@@ -182,6 +216,7 @@ public class Process extends UntypedAbstractActor {
 				is_halted = true;
 				if(debug) {log.info("p" + self().path().name() + " is now at hold.");};
 			}
+			
 			else if (message instanceof Read) {
 				Read r = (Read) message;
 				int ballot_red = r.getBallot();
@@ -189,8 +224,17 @@ public class Process extends UntypedAbstractActor {
 				if(debug) {log.info("p" + self().path().name() + " is now reading a ballot he recived");};
 			}
 			
+
+			else if (message instanceof Abort) {
+				is_proposing = false;
+				init_states();
+				if(debug) {log.info("p" + self().path().name() + " has aborted his propose operation");};
+			}
 			
-			
+			else if (message instanceof Gather) {
+				Gather g = (Gather) message;
+				this.ofConsGather(g.getBallotp(), g.getImpose(), g.getEstimate(), id);
+			}
 			
 			// other
 			/*
