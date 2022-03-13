@@ -114,10 +114,26 @@ public class Process extends UntypedAbstractActor {
 		proposal = v;
 		ballot += N;
 		for (ActorRef actor : processes.references) {
-			actor.tell(new Read(ballot), this.getSelf());
+			actor.tell(new Read(ballot, id), this.getSelf());
 			if( debug ) { log.info("Read ballot " + ballot + " msg: p" + self().path().name() + " -> p" + actor.path().name()); }
 		}
 		return;
+	}
+	
+	/*
+	 * @param b_received is ballot'
+	 * 
+	 */
+	
+	public void ofConsReceiveRead(int b_received, int IDj) {
+		ActorRef sender = processes.references.get(IDj);
+
+		if( readBallot > b_received || imposeBallot > b_received ) {
+			sender.tell(new Abort(b_received), getSender());
+			if( debug ) { log.info("Abort ballot " + b_received + " : p" + self().path().name() + " -> p" + sender.path().name()); }
+		} else {
+			readBallot = b_received;
+		}
 	}
 	
 	
@@ -166,11 +182,18 @@ public class Process extends UntypedAbstractActor {
 				is_halted = true;
 				if(debug) {log.info("p" + self().path().name() + " is now at hold.");};
 			}
+			else if (message instanceof Read) {
+				Read r = (Read) message;
+				int ballot_red = r.getBallot();
+				this.ofConsReceiveRead(r.getBallot(), r.getId());
+				if(debug) {log.info("p" + self().path().name() + " is now reading a ballot he recived");};
+			}
 			
 			
 			
 			
 			// other
+			/*
 			else if (message instanceof OfconsProposerMsg) {
 				OfconsProposerMsg m = (OfconsProposerMsg) message;
 				this.ofconsProposeReceived(m.v);
@@ -180,7 +203,7 @@ public class Process extends UntypedAbstractActor {
 				ReadMsg m = (ReadMsg) message;
 				this.readReceived(m.ballot, getSender());
 			}
-
+			 */
 		}
 	}
 }
