@@ -1,6 +1,7 @@
 package demo;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
+import demo.aux.*;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -37,18 +38,29 @@ public class Main {
 			actor.tell(m, ActorRef.noSender());
 		}
 		
-		Thread.sleep(Tle);
+		// launch message to the processes
+		for (int i = 0; i < N; i++) {
+            references.get(i).tell(new Launch(), ActorRef.noSender());
+		}
 		
 		// shuffle processes and make the first f crash
         Collections.shuffle(references);
         for (int i = 0; i < f; i++) {
             references.get(i).tell(new Crash(), ActorRef.noSender());
-            System.out.println("p" + references.get(i).path().name() + " will be soon crashed.");
+        }
+
+        
+        
+        // sleep for specified duration -- methode hethi mnayka nbadlouha mba3d ken 3ana wa9t
+		Thread.sleep(Tle);		
+		
+		// elect a leader, we choose the last one as he is randomly choose ( shuffled list ) and he could not have crashed
+        for (int i = 0; i < (N-1); i++) {
+            references.get(i).tell(new Hold(), ActorRef.noSender());
         }
         
-        
 		
-
+        // code zeyed mayosle7 fi chay
 //		OfconsProposerMsg opm = new OfconsProposerMsg(100);
 //		references.get(0).tell(opm, ActorRef.noSender());
 	}

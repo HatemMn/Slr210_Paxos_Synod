@@ -28,6 +28,8 @@ import akka.actor.Props;
 import akka.actor.UntypedAbstractActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
+import demo.aux.*;
+import java.time.Duration;
 import java.util.*;
 
 public class Process extends UntypedAbstractActor {
@@ -36,7 +38,7 @@ public class Process extends UntypedAbstractActor {
 	private final int id;//id of current process
 	private Members processes;//other processes' references
 
-	// main arguments
+	// OFcons algorithm arguments
 	private int ballot;
 	private Integer proposal;
 	private Integer readBallot;
@@ -44,11 +46,16 @@ public class Process extends UntypedAbstractActor {
 	private Integer estimate;
 	private int[][] states;
 
-	// other arguments
-	private double alpha;
+	// process state arguments
 	private boolean faultProne;
 	private boolean crashed;
 	private boolean debug;
+	private boolean is_proposing;
+	private boolean is_halted;
+	
+	// other arguments
+	private double alpha;
+	private int ReProposeTime = 200;
 
 	// Initialise process
 	public Process(int ID, int nb, double al, boolean deb) {
@@ -65,6 +72,7 @@ public class Process extends UntypedAbstractActor {
 		faultProne = false;
 		crashed = false;
 		debug = deb;
+		is_halted = false;
 	}
 
 	public String toString() {
@@ -80,6 +88,7 @@ public class Process extends UntypedAbstractActor {
 	}
 
 
+	// 3asb o5ra manich fehemha chtaslah
 	private void ofconsProposeReceived(Integer v) {
 
 		proposal = v;
@@ -89,6 +98,7 @@ public class Process extends UntypedAbstractActor {
 		}
 	}
 
+	// chnowa l3asb hethi
 	private void readReceived(int newBallot, ActorRef pj) {
 		log.info("read received " + self().path().name() );
 	}
@@ -104,7 +114,7 @@ public class Process extends UntypedAbstractActor {
 		if (faultProne && !crashed) {
 			if ( Math.random() < alpha ) {
 				crashed = true;
-				if(debug) {log.info("p" + self().path().name() + " has crashed.");};
+				if(debug) {log.info("p" + self().path().name() + " will enter silent mode.");};
 			}
 		}
 		// if the process is working normally
@@ -113,9 +123,30 @@ public class Process extends UntypedAbstractActor {
 			if (message instanceof Members) {
 				Members m = (Members) message;
 				processes = m;
-				log.info("p" + self().path().name() + " received processes info");
+				if(debug) {log.info("p" + self().path().name() + " received processes info");};
+			}
+			// making process fault prone
+			else if (message instanceof Crash) {
+				faultProne = true;
+				if(debug) {log.info("p" + self().path().name() + " is now fault prone.");};
 			}
 			
+			// launch the process if it is idle
+			else if (message instanceof Launch) {
+				if( !is_proposing ) {
+					// launch it
+					if(debug) {log.info("p" + self().path().name() + " will now launch.");};
+				}
+				// try to keep relaunching
+				if( !is_halted ) {
+			        getContext().system().scheduler().scheduleOnce(Duration.ofMillis(ReProposeTime), getSelf(), new Launch(), getContext().system().dispatcher(), ActorRef.noSender());
+				}
+			}
+			// put process to hold so he does not invoque anymore
+			else if (message instanceof Hold) {
+				is_halted = true;
+				if(debug) {log.info("p" + self().path().name() + " is now at hold.");};
+			}
 			
 			
 			

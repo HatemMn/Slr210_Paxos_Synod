@@ -1,5 +1,5 @@
-package demo;
+package demo.aux;
 
 public class Crash {
-	Crash() {};
+	public Crash() {};
 }
