@@ -12,8 +12,8 @@ public class Main {
 	 *
 	 */
 	
-	public static int N = 2;
-	public static int f = 0;
+	public static int N = 10;
+	public static int f = 3;
 	public static int Tle = 500;
 	public static double alpha = 0.1;
 	public static boolean debug_mode = true;
@@ -38,7 +38,7 @@ public class Main {
 		for (ActorRef actor : references) {
 			actor.tell(m, ActorRef.noSender());
 		}
-		Thread.sleep(2000);		
+	//	Thread.sleep(2000);		
 
 		// launch message to the processes
 		for (int i = 0; i < N; i++) {

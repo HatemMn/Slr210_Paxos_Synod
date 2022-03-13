@@ -1,27 +1,28 @@
 package demo.aux;
 
 public class Gather {
-	private int ballotp;
-	private int impose;
-	private int estimate;
-	private int id;
-	public Gather(int b, int im, int es, int id) {
+	private Integer ballotp;
+	private Integer impose;
+	private Integer estimate;
+	private Integer id;
+	public Gather(Integer b, Integer im, Integer es, Integer id) {
 		this.ballotp = b;
 		this.estimate = es;
 		this.impose = im;
 		this.id = id;
 	}
-	@Override
-	public String toString() {
-		return "Gather [ballotp=" + ballotp + ", impose=" + impose + ", estimate=" + estimate + "]";
+	
+	public Integer getId() {
+		return id;
 	}
-	public int getBallotp() {
+
+	public Integer getBallotp() {
 		return ballotp;
 	}
-	public int getImpose() {
+	public Integer getImpose() {
 		return impose;
 	}
-	public int getEstimate() {
+	public Integer getEstimate() {
 		return estimate;
 	}
 }

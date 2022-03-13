@@ -37,7 +37,7 @@ public class Process extends UntypedAbstractActor {
 	private final int N;//number of processes
 	private final int id;//id of current process
 	private Members processes;//other processes' references
-
+	
 	// OFcons algorithm arguments
 	private int ballot;
 	private Integer proposal;
@@ -46,6 +46,7 @@ public class Process extends UntypedAbstractActor {
 	private Integer estimate;
 	private int[][] states;
 	private int gatherNumber;
+	private int ackNumber;
 
 	// process state arguments
 	private boolean faultProne;
@@ -63,10 +64,11 @@ public class Process extends UntypedAbstractActor {
 		ballot = id-N;
 		proposal = null;
 		readBallot = 0;
-		imposeBallot = 0;
-		estimate = null;
+		imposeBallot = id-N;
+		estimate = -1;
 		states = new int[N][2];
 		gatherNumber = 0;
+		ackNumber = 0;
 	}
 	
 	public Process(int ID, int nb, double al, boolean deb) {
@@ -120,7 +122,6 @@ public class Process extends UntypedAbstractActor {
 		is_proposing = true;
 		proposal = v;
 		ballot += N;
-		System.out.print(processes.references.toString());
 		for (ActorRef actor : processes.references) {
 			actor.tell(new Read(ballot, id), this.getSelf());
 			if( debug ) { log.info("Read ballot " + ballot + " msg: p" + self().path().name() + " -> p" + actor.path().name()); }
@@ -136,15 +137,16 @@ public class Process extends UntypedAbstractActor {
 	public void ofConsReceiveRead(int b_received, int IDj) {
 		ActorRef sender = processes.references.get(IDj);
 
-		/*
+		
 		if( readBallot > b_received || imposeBallot > b_received ) {
 			sender.tell(new Abort(b_received), getSender());
 			if( debug ) { log.info("Abort ballot " + b_received + " : p" + self().path().name() + " -> p" + sender.path().name()); }
-		} else {
-			readBallot = b_received;
-			sender.tell(new Gather(b_received, imposeBallot, estimate,id), sender);
 		}
-		*/
+		else {
+			readBallot = b_received;
+			sender.tell(new Gather(b_received, imposeBallot, estimate,id), this.getSelf());
+		}
+		
 	}
 	
 	public void ofConsGather(int b_received, int estBallot, int est, int IDj) {
@@ -152,7 +154,7 @@ public class Process extends UntypedAbstractActor {
 		states[IDj][0] = est;
 		states[IDj][1] = estBallot;
 		gatherNumber++;
-		if( gatherNumber > N/2) {
+		if( gatherNumber > N/2) { // majority
 			// check if exists some estBallot > 0
 			int maxBal = -1, maxEst = -1;
 			for(int i=0; i<N;i++ ) {
@@ -167,11 +169,22 @@ public class Process extends UntypedAbstractActor {
 			states = new int[N][2];
 			for (ActorRef actor : processes.references) {
 				actor.tell(new Impose(ballot, proposal,id), this.getSelf());
-				if( debug ) { log.info("Someone is proposing : p" + self().path().name() + " -> p" + actor.path().name()); }
+				if( debug ) { log.info("Someone is imposing : p" + self().path().name() + " -> p" + actor.path().name()); }
 			}
 		}
 	}
 	
+	public void ofConsImposeReceive(int b_received, int v, int IDj) {
+		ActorRef sender = processes.references.get(IDj);
+		
+		if( readBallot >  b_received || imposeBallot > b_received ) {
+			sender.tell(new Abort( b_received ), sender);
+		} else {
+			estimate = v;
+			imposeBallot = b_received;
+			sender.tell(new ACK(b_received, id), sender);
+		}
+	}
 	
 	/**
 	 * The method that handles the received messages
@@ -238,7 +251,23 @@ public class Process extends UntypedAbstractActor {
 			
 			else if (message instanceof Gather) {
 				Gather g = (Gather) message;
-				this.ofConsGather(g.getBallotp(), g.getImpose(), g.getEstimate(), id);
+				this.ofConsGather(g.getBallotp(),g.getImpose(),g.getEstimate(),g.getId());
+			}
+			
+			else if ( message instanceof Impose ) {
+				Impose im = (Impose) message;
+				this.ofConsImposeReceive(im.getBallot(), im.getProposal(), im.getId());
+			}
+			
+			else if ( message instanceof ACK ) {
+				ACK akk = (ACK) message;
+				this.ackNumber++;
+				if( ackNumber > N/2 ) {
+					if( debug ) { log.info("This process will send DECIDE and the proposed value to all processes  " + self().path().name()); }
+					for (ActorRef actor : processes.references) {
+						
+					}
+				}
 			}
 			
 			// other
