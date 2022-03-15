@@ -58,13 +58,15 @@ public class Process extends UntypedAbstractActor {
 
 	// other arguments
 	private double alpha;
-	private int ReProposeTime = 200;
+	private long begin_time;
 	private static int decisionNumber=0;
+	
+	// time before repropose
+	private int ReProposeTime = 2500;
 
 	// Initialise process
 	public void init_states() {
 		ballot = id-N;
-		//	proposal = -6;
 		readBallot = 0;
 		imposeBallot = id-N;
 		estimate = -1;
@@ -73,12 +75,13 @@ public class Process extends UntypedAbstractActor {
 		ackNumber = 0;
 	}
 
-	public Process(int ID, int nb, double al, boolean deb) {
+	public Process(int ID, int nb, double al,long begin, boolean deb) {
 		N = nb;
 		id = ID;
 		init_states();
 		proposal = -1;
-
+		begin_time = begin;
+		
 		alpha = al;
 		faultProne = false;
 		crashed = false;
@@ -94,9 +97,9 @@ public class Process extends UntypedAbstractActor {
 
 
 	// Static function creating actor
-	public static Props createActor(int ID, int nb, double al, boolean deb) {
+	public static Props createActor(int ID, int nb, double al,long begin, boolean deb) {
 		return Props.create(Process.class, () -> {
-			return new Process(ID, nb,al, deb);
+			return new Process(ID, nb,al, begin,deb);
 		});
 	}
 
@@ -126,9 +129,12 @@ public class Process extends UntypedAbstractActor {
 		is_proposing = true;
 		proposal = v;
 		ballot += N;
+		states = new int[N][2];
+
 		for (ActorRef actor : processes.references) {
 			actor.tell(new Read(ballot, id), this.getSelf());
-			//	if( debug ) { log.info("Read ballot " + ballot + " msg: p" + self().path().name() + " -> p" + actor.path().name()); }
+			//	if( debug ) { log.info("Read ballot " + ballot + " msg: p"
+			// + self().path().name() + " -> p" + actor.path().name()); }
 		}
 		return;
 	}
@@ -140,7 +146,6 @@ public class Process extends UntypedAbstractActor {
 
 	public void ofConsReceiveRead(int b_received, int IDj) {
 		ActorRef sender = processes.references.get(IDj);
-
 
 		if( readBallot > b_received || imposeBallot > b_received ) {
 			sender.tell(new Abort(b_received), getSender());
@@ -171,9 +176,9 @@ public class Process extends UntypedAbstractActor {
 				proposal = maxEst;
 			}
 			states = new int[N][2];
+			if( debug ) { log.info("Someone is imposing : p" + self().path().name() + " to the others"); }
 			for (ActorRef actor : processes.references) {
 				actor.tell(new Impose(ballot, proposal,id), this.getSelf());
-				if( debug ) { log.info("Someone is imposing : p" + self().path().name() + " -> p" + actor.path().name()); }
 			}
 		}
 	}
@@ -193,16 +198,14 @@ public class Process extends UntypedAbstractActor {
 	/**
 	 * The method that handles the received messages
 	 *
-	 *	 
-	 *
 	 */
 	public void onReceive(Object message) throws Throwable {
 		// if process is crashing
 		if (faultProne && !crashed) {
 			if ( Math.random() < alpha ) {
 				crashed = true;
-				if(true) {
-					log.info("p" + self().path().name() + " will enter silent mode.");};
+				if(debug) {	log.info("p" + self().path().name() + " will enter silent mode.");}
+				
 			}
 		}
 		// if the process is working normally
@@ -216,19 +219,23 @@ public class Process extends UntypedAbstractActor {
 			// making process fault prone
 			else if (message instanceof Crash) {
 				faultProne = true;
-				if(true) {log.info("p" + self().path().name() + " is now fault prone.");};
+				if(debug) {log.info("p" + self().path().name() + " is now fault prone.");};
 			}
 
 			// launch the process if it is idle
 			else if (message instanceof Launch) {
-				if( !is_proposing ) {
-					// launch it
+		//		if( !is_proposing ) {
+				if( !is_halted  && !decided  ) {
+					
+				//	log.info("p" + self().path().name() + " will try toaaaaaaaaaaagain.");
 					int prop = Math.random() < 0.5 ? 0 : 1;
 					this.ofConsPropose(prop);
 					if(debug) {log.info("p" + self().path().name() + " will now launch.");};
 				}
 				// try to keep relaunching
-				if( !is_halted ) {
+				if( !is_halted  && !decided ) {
+					log.info("p" + self().path().name() + " will try to propose again.");
+
 					getContext().system().scheduler().scheduleOnce(Duration.ofMillis(ReProposeTime), getSelf(), new Launch(), getContext().system().dispatcher(), ActorRef.noSender());
 				}
 			}
@@ -240,7 +247,6 @@ public class Process extends UntypedAbstractActor {
 
 			else if (message instanceof Read) {
 				Read r = (Read) message;
-				int ballot_red = r.getBallot();
 				this.ofConsReceiveRead(r.getBallot(), r.getId());
 				if(debug) {log.info("p" + self().path().name() + " is now reading a ballot he recived");};
 			}
@@ -248,7 +254,7 @@ public class Process extends UntypedAbstractActor {
 
 			else if (message instanceof Abort) {
 				is_proposing = false;
-				init_states();
+			//	init_states();
 				if(debug) {log.info("p" + self().path().name() + " has aborted his propose operation");};
 			}
 
@@ -279,13 +285,13 @@ public class Process extends UntypedAbstractActor {
 				if(!decided) {
 					decisionNumber++;
 					decided = true;
-					//		if(debug) {
+					is_proposing = false;
 					log.info("p" + self().path().name() + " has FINALLY DECIDED the value : " + dec.getProposal());
-					//	};
+
 					for (ActorRef actor : processes.references) {
 						actor.tell(new Decide(dec.getProposal()), this.getSelf());
 					}
-					System.out.println("LES DECISIONS :"+ Integer.toString(decisionNumber));
+					if(debug) {System.out.println("LES DECISIONS :"+ Integer.toString(decisionNumber));}
 				}
 			}
 

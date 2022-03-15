@@ -12,10 +12,10 @@ public class Main {
 	 *
 	 */
 	
-	public static int N = 100;
-	public static int f = 49;
-	public static int Tle = 1000;
-	public static double alpha = 1;
+	public static int N = 6;
+	public static int f = 2;
+	public static int Tle = 500;
+	public static double alpha = 0.5;
 	public static boolean debug_mode = false;
 
 	
@@ -24,15 +24,17 @@ public class Main {
 		// Instantiate an actor system
 		final ActorSystem system = ActorSystem.create("system");
 		system.log().info("System started with N=" + N );
+        long begin_time = System.currentTimeMillis();
+
 		
 		// Instantiate processes
 		// Please note that our processes are named from 0 to N-1 for convenience, NOT 1 TO N
 		ArrayList<ActorRef> references = new ArrayList<>();
 		for (int i = 0; i < N; i++) {
-			final ActorRef a = system.actorOf(Process.createActor(i , N, alpha, debug_mode), "" + i); // bug source
+			final ActorRef a = system.actorOf(Process.createActor(i , N, alpha,begin_time, debug_mode), "" + i); // bug source
 			references.add(a);
 		}
-		//a
+
 		//give each process a view of all the other processes
 		Members m = new Members(references);
 		for (ActorRef actor : references) {
