@@ -63,7 +63,7 @@ public class Process extends UntypedAbstractActor {
 	private static long elapsed_time=Long.MAX_VALUE;
 	
 	// time before repropose ( to be tuned )
-	private int ReProposeTime = 2500;
+	private int ReProposeTime = 100;
 
 	// Initialise process
 	public void init_states() {
@@ -235,7 +235,7 @@ public class Process extends UntypedAbstractActor {
 				}
 				// try to keep relaunching
 				if( !is_halted  && !decided ) {
-					log.info("p" + self().path().name() + " will try to propose again.");
+					if(debug) {log.info("p" + self().path().name() + " will try to propose again.");}
 
 					getContext().system().scheduler().scheduleOnce(Duration.ofMillis(ReProposeTime), getSelf(), new Launch(), getContext().system().dispatcher(), ActorRef.noSender());
 				}
