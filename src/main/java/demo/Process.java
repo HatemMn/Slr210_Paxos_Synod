@@ -60,8 +60,9 @@ public class Process extends UntypedAbstractActor {
 	private double alpha;
 	private long begin_time;
 	private static int decisionNumber=0;
+	private static long elapsed_time=Long.MAX_VALUE;
 	
-	// time before repropose
+	// time before repropose ( to be tuned )
 	private int ReProposeTime = 2500;
 
 	// Initialise process
@@ -286,7 +287,10 @@ public class Process extends UntypedAbstractActor {
 					decisionNumber++;
 					decided = true;
 					is_proposing = false;
-					log.info("p" + self().path().name() + " has FINALLY DECIDED the value : " + dec.getProposal());
+					long temp = System.currentTimeMillis() - begin_time;
+	                elapsed_time =  elapsed_time < temp ? elapsed_time : temp;
+
+					log.info("p" + self().path().name() + " has FINALLY DECIDED the value :\n " + dec.getProposal() + " in the time :" + Long.toString(elapsed_time));
 
 					for (ActorRef actor : processes.references) {
 						actor.tell(new Decide(dec.getProposal()), this.getSelf());

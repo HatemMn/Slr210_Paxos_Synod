@@ -2,6 +2,8 @@ package demo;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import demo.aux.*;
+
+import java.time.Duration;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -12,10 +14,10 @@ public class Main {
 	 *
 	 */
 	
-	public static int N = 6;
-	public static int f = 2;
+	public static int N = 3;
+	public static int f = 1;
 	public static int Tle = 500;
-	public static double alpha = 0.5;
+	public static double alpha = 1;
 	public static boolean debug_mode = false;
 
 	
@@ -55,23 +57,10 @@ public class Main {
             references.get(i).tell(new Crash(), ActorRef.noSender());
         }
 
-		
-        
-        
-        // sleep for specified duration -- methode hethi mnayka nbadlouha mba3d ken 3ana wa9t
-		Thread.sleep(Tle);		
-		
-		// elect a leader, we choose the last one as he is randomly choose ( shuffled list ) and he could not have crashed
-        for (int i = 0; i < (N-1); i++) {
-            references.get(i).tell(new Hold(), ActorRef.noSender());
-        }
-     
-      
+		// Create leader elector and ask him to work after Tle time
+        ActorRef leaderElc = system.actorOf(LeaderElector.createActor(new Members(references), N), "leader");
+        system.scheduler().scheduleOnce(Duration.ofMillis(Tle), leaderElc, new Launch(), system.dispatcher(), ActorRef.noSender());
 
-        
-        
-        // code zeyed mayosle7 fi chay
-//		OfconsProposerMsg opm = new OfconsProposerMsg(100);
-//		references.get(0).tell(opm, ActorRef.noSender());
+
 	}
 }
