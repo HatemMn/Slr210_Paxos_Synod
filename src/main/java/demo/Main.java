@@ -14,10 +14,10 @@ public class Main {
 	 *
 	 */
 	
-	public static int N = 100;
-	public static int f = 49;
-	public static int Tle = 500;
-	public static double alpha = 0;
+	public static int N = 3;
+	public static int f = 1;
+	public static int Tle = 1000;
+	public static double alpha = 0.1;
 	public static boolean debug_mode = false;
 
 	
